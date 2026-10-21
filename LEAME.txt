@@ -1,0 +1,145 @@
+VALIDADOR DE PAGOS A CONTRATISTAS (SENA) - versión 1.3.0
+=========================================================
+
+Qué es
+------
+Aplicación web local (un solo archivo index.html + carpeta libs) que lee paquetes de pago de
+contratistas en PDF, extrae los datos de cada documento, cruza la información y dice si el paquete
+es VÁLIDO, VÁLIDO CON ADVERTENCIAS, REQUIERE REVISIÓN o tiene ERROR, indicando en cada caso qué
+valores se compararon y de qué página salieron. Todo se procesa en su equipo: no envía nada a Internet.
+
+Novedades de la 1.3.0: formato nuevo de la planilla SI contratistas (octubre de 2026)
+---------------------------------------------------------------------------------
+* Lee el N.º de planilla PILA del mes anterior cuando viene pegado al texto vecino de la planilla nueva.
+* El fondo de solidaridad «$ -» se lee como 0 (cero contable).
+* Lee el bloque «ORDENADOR DEL GASTO» de la planilla (el rótulo anterior sigue funcionando).
+* Sigue leyendo el formato anterior sin cambios (comprobado con los 6 PDF de septiembre, julio y junio).
+* Además: la suma de tramos del comprobante ya no queda sin verificar cuando las celdas de una fila
+  están ligeramente desfasadas, y si «Ciudad / municipio – Fecha» trae varios días el aviso muestra el texto.
+* Probada con 2 paquetes reales en el formato nuevo (34 en total). Ver HALLAZGOS_OCTUBRE.md y AUDITORIA.md.
+  Si alguna planilla nueva da «No encontrado» en un campo, envíe el PDF para ajustar la lectura.
+
+Novedad de la 1.2.1: dato «ID de Proceso» (ver AUDITORIA.md, sección 0a)
+-----------------------------------------------------------------------
+* Se lee el campo «ID de Proceso» del encabezado de la planilla SI contratistas (p. ej. 64605-559983).
+* Se ve en el listado (bajo la cédula; la búsqueda también lo encuentra), en las pestañas Resumen y
+  Planilla SI (con su página y el lápiz para corregirlo) y en el informe imprimible.
+* En «Exportar > CSV de resumen» aparece como la ÚLTIMA columna («ID de Proceso»); las demás columnas
+  no cambiaron de lugar.
+* No agrega validaciones ni cambia ningún resultado anterior.
+* Los contratistas que ya estaban guardados con una versión anterior NO tienen este dato: ábralos y
+  pulse «Reprocesar» (ojo: descarta las ediciones manuales de ese registro) o vuelva a cargar su PDF.
+
+Novedades de la 1.2 (prueba con el PDF combinado de junio; ver AUDITORIA.md, sección 0b)
+-----------------------------------------------------------------------------------
+* Lee hojas con el contenido girado y descarta el texto impreso dos veces (sobrescrito).
+* Informes de legalización repartidos en varias páginas se reconocen como un solo informe.
+* Reconoce un sexto formato de PILA: «Soporte de pago para el cotizante» (SOI).
+* Páginas con letra que no se puede leer (fuente sin codificación) se marcan «TEXTO ILEGIBLE - REQUIERE
+  REVISIÓN MANUAL». Si por eso parece faltar un documento, la regla queda NO VERIFICABLE (no ERROR) y
+  nombra las páginas por revisar.
+* Si la casilla «N.º planilla PILA» de la planilla SI trae texto en vez de número (p. ej. primer pago,
+  «Decreto 1273 de…»), el aviso lo cita.
+* Probada con 32 paquetes (4 de septiembre, 15 de julio y 13 de junio). Ver HALLAZGOS_JUNIO.md.
+
+Novedades de la 1.1
+-------------------
+* Se probó con 19 paquetes reales (4 de septiembre y 15 de julio, incluido un PDF combinado de 124 páginas).
+* Reconoce 5 formatos de PILA (planilla integrada de 2 págs., soporte de pago general, autoliquidación
+  consolidada PagoSimple/SuAporte, planilla individual y resumen general de pago; en la 1.2 se suma el
+  soporte para el cotizante). Si aparece uno que no
+  conoce, lo AVISA en lugar de adivinar.
+* Informes, comprobantes y SIIF se leen por etiquetas y columnas (no por posición fija); más formatos de fecha.
+* Compara contra la PILA el aporte obligatorio (sin mora). Diferencia de $1 en el IBC = ADVERTENCIA.
+* Las firmas pegadas como sello/anotación en el PDF ahora se detectan.
+* La firma del ORDENADOR en la planilla SI ya no es obligatoria por defecto (el formato no tiene espacio
+  para ella); puede volver a exigirla en Configuración.
+
+Contenido de la carpeta
+-----------------------
+  index.html              La aplicación (HTML, CSS y JavaScript en un solo archivo).
+  libs/pdf.min.js         pdf.js 3.11.174 (Mozilla, licencia Apache-2.0) - lector de PDF.
+  libs/pdf.worker.min.js  Componente de pdf.js. Ambos archivos deben estar en la carpeta "libs".
+  iniciar.bat             Opcional: abre la app con un servidor local (requiere Python 3).
+  AUDITORIA.md            Informe de auditoría: qué se probó, qué no, y la matriz de trazabilidad.
+  HALLAZGOS_CORPUS.md/.csv  Lo que la app reportó sobre los 19 paquetes de julio y septiembre (contiene datos personales).
+  HALLAZGOS_JUNIO.md/.csv   Lo mismo para los 13 paquetes de junio (contiene datos personales).
+  HALLAZGOS_OCTUBRE.md/.csv Lo mismo para los 2 paquetes de octubre, formato nuevo de la planilla SI.
+  pruebas/                Scripts de las pruebas automáticas (ver AUDITORIA.md, sección 8).
+  regresion/              Comprobación de que un cambio de código no daña la lectura de PDF ya revisados.
+  LEAME.txt               Este archivo.
+
+Cómo abrirla
+------------
+Opción 1 (recomendada): doble clic en index.html con Google Chrome o Microsoft Edge.
+Opción 2: doble clic en iniciar.bat (abre http://127.0.0.1:8765/index.html).
+
+IMPORTANTE: el navegador guarda los datos por "origen". Lo que cargue abriendo index.html con doble
+clic NO se ve si luego abre la app con iniciar.bat (y al revés). Use siempre la misma forma o pase la
+información con Respaldo > Exportar / Importar. Si descarga la carpeta en otra ubicación o equipo, use
+también el respaldo.
+
+Uso básico
+----------
+1. "Cargar PDF": seleccione o arrastre uno o varios PDF. Cada planilla SI contratistas abre un paquete;
+   un solo PDF puede traer muchos contratistas (el combinado de julio trae 15; el de junio, 13).
+2. Se registra un contratista por CÉDULA + MES de elaboración de la planilla. Si ya existe, se
+   reemplaza (si el nombre es distinto, la app pregunta antes de reemplazar).
+3. Si no se puede leer la cédula o la fecha, el paquete queda "NO IDENTIFICADO": no se guarda hasta que
+   usted escriba cédula y mes en el aviso que aparece sobre el listado.
+4. En el listado: filtre, busque, abra "Ver" o "Eliminar" (con confirmación).
+5. En el detalle: Resumen, Planilla SI, PILA (indica el formato reconocido), Comisiones, Validaciones
+   (V1-V7 solicitadas, C1-C9 complementarias) y Revisión visual (páginas del PDF con la zona donde se
+   buscó cada firma).
+6. Si un valor se leyó mal, pulse el lápiz para corregirlo: se conserva el valor original, se anota en
+   el historial y se recalculan las validaciones. "Reprocesar" vuelve a leer el PDF guardado.
+7. Firmas: la detección es ASISTIDA (dos métodos: imágenes/trazos vectoriales y tinta medida en pantalla).
+   Si no coinciden o hay indicios dudosos queda "REQUIERE REVISIÓN" y usted decide en "Revisión visual".
+8. Exportar: CSV (UTF-8 con BOM, separador ;) de resumen o de validaciones; informe imprimible.
+   Respaldo: JSON con los registros (y, opcionalmente, los PDF originales). El respaldo con PDF puede pesar
+   varios MB por contratista.
+
+Qué verifica
+------------
+V1 cédula y nombre iguales en todos los documentos.   V2 N.º de planilla PILA (columna del mes anterior de
+la planilla SI) = N.º de la PILA, periodo cotizado = mes anterior y fecha de pago dentro del mes de elaboración.
+V3 aportes de salud, pensión, ARL, IBC y fondo de solidaridad de la planilla SI = PILA.
+V4 suma de los totales SIIF de las comisiones (sin duplicados) = ingresos por comisiones de la planilla.
+V5 número de comisión igual en SIIF, informes (orden de viaje) y comprobantes.
+V6 documentos y campos requeridos presentes (y avisos de lectura, p. ej. formato de PILA desconocido).
+V7 firmas requeridas (configurable en Configuración).
+El estado global depende solo de V1-V7. C1-C9 (aritmética, recálculo de aportes, fechas, contrato, etc.) solo
+agregan advertencias o información.
+
+Cómo leer los resultados
+------------------------
+* ERROR: los documentos dicen cosas distintas (o falta algo exigido). Verifique en la página indicada.
+* ADVERTENCIA: algo que conviene mirar pero que puede ser legítimo (redondeo de $1, nombre truncado,
+  formato de PILA que no discrimina el fondo de solidaridad, contrato distinto, fecha sin día).
+* "No encontrado": la app no pudo leer ese dato; NO significa que el documento no lo tenga. Revíselo.
+* Un paquete "VÁLIDO" significa que no se encontraron diferencias en lo que la app sabe leer, no que el
+  expediente esté libre de errores. La decisión final es del auditor.
+
+Limitaciones que debe conocer
+-----------------------------
+* No hace OCR: una página escaneada (sin texto) se marca "SIN TEXTO - REQUIERE REVISIÓN MANUAL" y una con
+  letra ilegible, "TEXTO ILEGIBLE ...". Lo que solo se ve en la imagen (p. ej. un número de radicado
+  impreso como imagen) se reporta como "No encontrado"; revíselo en "Revisión visual".
+* La lectura se calibró con los formatos de los 34 paquetes de muestra (junio y octubre mostraron huecos que
+  los PDF anteriores no tenían: espere que un lote nuevo pueda mostrar alguno más). El formato nuevo de la
+  planilla SI solo se vio en 2 paquetes. Un formato nuevo de planilla SI,
+  PILA, SIIF, informe GCCON-F-101 / GTH-F-087, comprobante GRF-F-076 o radicado puede dar "No encontrado"
+  o lecturas parciales (la app lo muestra, no inventa valores). En ese caso envíe el PDF para ajustar la
+  lectura y use la carpeta regresion/ para comprobar que no se daña lo que ya funcionaba.
+* La detección de firmas no distingue firmas auténticas de imágenes cualquiera: indica si hay marca de
+  firma en la zona. La validez de la firma es decisión del auditor.
+* Probada en Chromium (equivalente a Chrome/Edge) en Linux. Firefox, Safari y Windows no se probaron;
+  iniciar.bat no se ejecutó en Windows.
+* HALLAZGOS_CORPUS, HALLAZGOS_JUNIO, HALLAZGOS_OCTUBRE y regresion/gold contienen cédulas, nombres y montos reales: manéjelos con reserva.
+
+Si falta la carpeta libs
+------------------------
+Se necesitan pdf.min.js y pdf.worker.min.js de pdf.js versión 3.11.174 (es la versión incluida y probada).
+Se obtuvieron del paquete npm "pdfjs-dist@3.11.174" (carpeta build/). También puede intentar descargarlos de
+https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js y .../pdf.worker.min.js (esa dirección no
+se pudo verificar desde el entorno de desarrollo). Guárdelos en "libs", junto a index.html.

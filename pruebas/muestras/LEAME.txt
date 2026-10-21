@@ -1,0 +1,10 @@
+Coloque aquí los PDF de muestra (no se incluyen: contienen datos personales) con estos nombres:
+  julio.pdf            (GFs_Julio_2026.pdf, 124 págs., 15 contratistas)
+  junio.pdf            (GFs_Junio_2026.pdf, 83 págs., 13 contratistas)
+  c1_66825336.pdf      (…1_GF_66825336_5726_SEP_2026.pdf)
+  c2_31710078.pdf      (…4_GF_31710078_5426_SEP_2026.pdf)
+  c3_16797358.pdf      (…8_GF_16797358_5126_SEP_2026.pdf)
+  c4_15646465.pdf      (…11_GF_15646465_4826_SEP_2026.pdf)
+  o1_16797358.pdf      (…8_GF_16797358_5126_OCT_2026.pdf, formato nuevo de la planilla SI, 33 págs.)
+  o2_1130637605.pdf    (…2_GF_1130637605_5526_OCT_2026.pdf, formato nuevo de la planilla SI, 2 págs.)
+Ver AUDITORIA.md, sección 8.
