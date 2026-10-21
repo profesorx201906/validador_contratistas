@@ -937,7 +937,6 @@ fieldset legend { font-weight: 700; font-size: .88rem; padding: 0 6px; }
     P.retefuentePeriodo = fMonto(va(/^retencion en la fuente del periodo$/));
     P.valorAPagar = fMonto(rn(/^valor a pagar$/));
     P.embargo = fMonto(rn(/^descuentos de embargo/));
-    P.proUCEVA = fMonto(rn(/^pro-?uceva$/));
     P.univPacifico = fMonto(rn(/^universidad del pacifico$/));
     P.reteica = fMonto(rn(/^reteica/));
     P.menosRetefuente = fMonto(rn(/^menos retencion en la fuente$/));
@@ -2140,7 +2139,7 @@ fieldset legend { font-weight: 700; font-size: .88rem; padding: 0 6px; }
       push(item('V6', 'V', regla, miss.length ? ERR : OK, [], miss.length ? 'Falta: ' + miss.join(', ') + '.' + nota : 'Todos los campos requeridos fueron extraídos.'));
     };
     if (!P) push(item('V6', 'V', 'Planilla SI contratistas presente', ERR, [], 'El PDF trae otros documentos pero ninguna planilla SI contratistas.'));
-    else v6p('Planilla SI: campos requeridos', faltan(P, [['nombre', 'nombre'], ['cedula', 'cédula'], ['fechaElab', 'fecha de elaboración'], ['compromiso', 'N.º compromiso SIIF'], ['honorarios', 'ingresos por honorarios'], ['comisiones', 'ingresos por comisiones'], ['pilaNro', 'N.º planilla PILA (mes anterior)'], ['ibc', 'IBC'], ['salud', 'aporte salud'], ['pension', 'aporte pensión'], ['arl', 'ARL'], ['proUCEVA', 'Pro-UCEVA']]));
+    else v6p('Planilla SI: campos requeridos', faltan(P, [['nombre', 'nombre'], ['cedula', 'cédula'], ['fechaElab', 'fecha de elaboración'], ['compromiso', 'N.º compromiso SIIF'], ['honorarios', 'ingresos por honorarios'], ['comisiones', 'ingresos por comisiones'], ['pilaNro', 'N.º planilla PILA (mes anterior)'], ['ibc', 'IBC'], ['salud', 'aporte salud'], ['pension', 'aporte pensión'], ['arl', 'ARL']]));
     if (!L) push(item('V6', 'V', 'Planilla PILA presente', faltaE, [], 'No se encontró planilla PILA en el paquete.' + pagsIleg));
     else {
       (L.adv || []).forEach((a) => push(item('V6', 'V', 'PILA: aviso de lectura', ADV, [], a)));
@@ -2196,10 +2195,10 @@ fieldset legend { font-weight: 700; font-size: .88rem; padding: 0 6px; }
         const sa = v('saldoAnterior'), vb = v('valorBruto'), ns = v('nuevoSaldo');
         C('C1', 'Saldo anterior − valor bruto = nuevo saldo', eq(ns, sa != null && vb != null ? sa - vb : null), [ent('Nuevo saldo', P.nuevoSaldo, 'Planilla SI'), entV('Saldo anterior − valor bruto', sa != null && vb != null ? U.fmtCOP(sa - vb) : null, 'Planilla SI')], 'Aritmética de la planilla.');
         C('C1', 'Honorarios = valor bruto del pago', eq(hon, vb), [ent('Honorarios', P.honorarios, 'Planilla SI'), ent('Valor bruto del pago', P.valorBruto, 'Planilla SI')], 'Aritmética de la planilla.');
-        const desc = ['menosRetefuente', 'menosRetIVA', 'reteica', 'proUCEVA', 'univPacifico', 'otrasRetenciones', 'embargo'].map((k) => v(k) || 0).reduce((a, b) => a + b, 0);
+        const desc = ['menosRetefuente', 'menosRetIVA', 'reteica', 'univPacifico', 'otrasRetenciones', 'embargo'].map((k) => v(k) || 0).reduce((a, b) => a + b, 0);
         const rf = v('retefuentePeriodo') || 0;
         const neto = vb != null ? vb - Math.max(rf, v('menosRetefuente') || 0) - (desc - (v('menosRetefuente') || 0)) : null;
-        C('C1', 'Valor a pagar = valor bruto − retención en la fuente − retenciones y descuentos listados − embargos', eq(v('valorAPagar'), neto), [ent('Valor a pagar', P.valorAPagar, 'Planilla SI'), entV('Cálculo', neto == null ? null : U.fmtCOP(neto), 'Planilla SI')], 'Descuentos considerados: retefuente, retención IVA, ReteICA, Pro-UCEVA, Universidad del Pacífico, otras retenciones y embargos.');
+        C('C1', 'Valor a pagar = valor bruto − retención en la fuente − retenciones y descuentos listados − embargos', eq(v('valorAPagar'), neto), [ent('Valor a pagar', P.valorAPagar, 'Planilla SI'), entV('Cálculo', neto == null ? null : U.fmtCOP(neto), 'Planilla SI')], 'Descuentos considerados: retefuente, retención IVA, ReteICA, Universidad del Pacífico, otras retenciones y embargos.');
       }
       /* C2 PILA */
       if (L) {
@@ -2926,7 +2925,7 @@ fieldset legend { font-weight: 700; font-size: .88rem; padding: 0 6px; }
         honorarios: P ? fVal(P.honorarios) : null, comisiones: P ? fVal(P.comisiones) : null, totalIngresos: P ? fVal(P.totalIngresos) : null,
         pilaNroSI: P ? fVal(P.pilaNro) : null, pilaNro: L ? fVal(L.numero) : null,
         periodo: L ? fVal(L.periodoSalud) : null, fechaPago: L ? fVal(L.fechaPago) : null, operador: L ? fVal(L.operador) : null,
-        ibc: P ? fVal(P.ibc) : null, saludSI: P ? fVal(P.salud) : null, pensionSI: P ? fVal(P.pension) : null, arlSI: P ? fVal(P.arl) : null, proUCEVA: P ? fVal(P.proUCEVA) : null,
+        ibc: P ? fVal(P.ibc) : null, saludSI: P ? fVal(P.salud) : null, pensionSI: P ? fVal(P.pension) : null, arlSI: P ? fVal(P.arl) : null,
         saludPILA: L ? fVal(L.salud) : null, pensionPILA: L ? fVal(L.pension) : null, arlPILA: L ? fVal(L.arl) : null,
         firmaContratista: estFirma('planilla', 'contratista'), firmaSupervisor: estFirma('planilla', 'supervisor'), firmaOrdenador: estFirma('planilla', 'ordenador'), firmasTodas: todasFirmas,
         nComisiones: (r.paquete.comisiones || []).length, numComisiones: (r.paquete.comisiones || []).map((x) => (x.nro != null ? x.nro : 's/n')).join(', '), sumaComisiones: sumC,
@@ -2947,11 +2946,11 @@ fieldset legend { font-weight: 700; font-size: .88rem; padding: 0 6px; }
     function toCsv(rows) { return '﻿' + rows.map((r) => r.map(csvCell).join(';')).join('\r\n') + '\r\n'; }
     async function csvResumen(claves) {
       const todos = (await store.allRegistros()).filter((r) => !claves || claves.indexOf(r.clave) >= 0).sort((a, b) => (a.nombre || '').localeCompare(b.nombre || '') || a.mes.localeCompare(b.mes));
-      const head = ['Cédula', 'Nombre', 'Mes planilla', 'Fecha elaboración', 'N.º compromiso SIIF', 'Honorarios', 'Ingresos por comisiones', 'Total ingresos', 'N.º planilla PILA (planilla SI)', 'N.º planilla PILA (PILA)', 'Periodo cotizado', 'Fecha de pago PILA', 'Empresa que recauda', 'IBC', 'Salud (planilla SI)', 'Pensión (planilla SI)', 'ARL (planilla SI)', 'Pro-UCEVA', 'Salud (PILA)', 'Pensión (PILA)', 'ARL (PILA)', 'Firma contratista (planilla)', 'Firma supervisor (planilla)', 'Firma ordenador (planilla)', 'Firmas de todos los documentos', 'N.º de comisiones', 'N.º de las comisiones', 'Suma total comisiones (SIIF)', 'Estado', 'Errores', 'Advertencias', 'No verificables', 'Archivo', 'Fecha de carga', 'Con ediciones manuales', 'ID de Proceso'];
+      const head = ['Cédula', 'Nombre', 'Mes planilla', 'Fecha elaboración', 'N.º compromiso SIIF', 'Honorarios', 'Ingresos por comisiones', 'Total ingresos', 'N.º planilla PILA (planilla SI)', 'N.º planilla PILA (PILA)', 'Periodo cotizado', 'Fecha de pago PILA', 'Empresa que recauda', 'IBC', 'Salud (planilla SI)', 'Pensión (planilla SI)', 'ARL (planilla SI)', 'Salud (PILA)', 'Pensión (PILA)', 'ARL (PILA)', 'Firma contratista (planilla)', 'Firma supervisor (planilla)', 'Firma ordenador (planilla)', 'Firmas de todos los documentos', 'N.º de comisiones', 'N.º de las comisiones', 'Suma total comisiones (SIIF)', 'Estado', 'Errores', 'Advertencias', 'No verificables', 'Archivo', 'Fecha de carga', 'Con ediciones manuales', 'ID de Proceso'];
       const rows = [head];
       for (const r of todos) {
         const s = resumenRegistro(r);
-        rows.push([s.cedula, s.nombre, s.mes, s.fechaElab ? U.fmtFecha(s.fechaElab) : '', s.compromiso, s.honorarios, s.comisiones, s.totalIngresos, s.pilaNroSI, s.pilaNro, s.periodo ? U.fmtFecha(s.periodo) : '', s.fechaPago ? U.fmtFecha(s.fechaPago) : '', s.operador, s.ibc, s.saludSI, s.pensionSI, s.arlSI, s.proUCEVA, s.saludPILA, s.pensionPILA, s.arlPILA, s.firmaContratista, s.firmaSupervisor, s.firmaOrdenador, s.firmasTodas, s.nComisiones, s.numComisiones, s.sumaComisiones, s.estado, s.errores, s.advertencias, s.noVerificables, s.archivo, s.fechaCarga, s.editado ? 'Sí' : 'No', s.idProceso]);
+        rows.push([s.cedula, s.nombre, s.mes, s.fechaElab ? U.fmtFecha(s.fechaElab) : '', s.compromiso, s.honorarios, s.comisiones, s.totalIngresos, s.pilaNroSI, s.pilaNro, s.periodo ? U.fmtFecha(s.periodo) : '', s.fechaPago ? U.fmtFecha(s.fechaPago) : '', s.operador, s.ibc, s.saludSI, s.pensionSI, s.arlSI, s.saludPILA, s.pensionPILA, s.arlPILA, s.firmaContratista, s.firmaSupervisor, s.firmaOrdenador, s.firmasTodas, s.nComisiones, s.numComisiones, s.sumaComisiones, s.estado, s.errores, s.advertencias, s.noVerificables, s.archivo, s.fechaCarga, s.editado ? 'Sí' : 'No', s.idProceso]);
       }
       return toCsv(rows);
     }
@@ -3205,7 +3204,7 @@ fieldset legend { font-weight: 700; font-size: .88rem; padding: 0 6px; }
       ['valorTotalContrato', 'Valor total del contrato'], ['saldoAnterior', 'Saldo anterior del contrato'], ['valorBruto', 'Valor bruto del pago'], ['nuevoSaldo', 'Nuevo saldo del contrato'],
       ['honorarios', 'Ingresos por honorarios'], ['comisiones', 'Ingresos por comisiones'], ['totalIngresos', 'Total ingresos del periodo'],
       ['baseRetencion', 'Base para retención en la fuente'], ['retefuentePeriodo', 'Retención en la fuente del periodo'], ['menosRetefuente', 'Menos retención en la fuente'],
-      ['menosRetIVA', 'Menos retención IVA'], ['iva', 'IVA'], ['reteica', 'ReteICA'], ['proUCEVA', 'Pro-UCEVA'], ['univPacifico', 'Universidad del Pacífico'],
+      ['menosRetIVA', 'Menos retención IVA'], ['iva', 'IVA'], ['reteica', 'ReteICA'], 
       ['otrasRetenciones', 'Otras retenciones'], ['embargo', 'Descuentos de embargo'], ['valorAPagar', 'Valor a pagar'],
     ],
     planillaSS: [
@@ -3384,7 +3383,7 @@ fieldset legend { font-weight: 700; font-size: .88rem; padding: 0 6px; }
     stack.appendChild(h('div', { class: 'grid2' },
       h('div', { class: 'card' }, h('div', { class: 'card-h' }, h('h3', null, 'Planilla SI contratistas')), h('div', { class: 'card-b' }, P ? kv([
         ['Fecha de elaboración', fv(P.fechaElab)], ['N.º compromiso SIIF', fv(P.compromiso)], ['ID de Proceso', P.idProceso === undefined ? h('span', { class: 'muted' }, 'Sin leer: registro guardado con una versión anterior; pulse «Reprocesar»') : fv(P.idProceso)], ['Ingresos por honorarios', fv(P.honorarios)], ['Ingresos por comisiones', fv(P.comisiones)],
-        ['N.º planilla PILA (mes anterior)', fv(P.pilaNro)], ['Ingreso base de cotización', fv(P.ibc)], ['Aporte salud', fv(P.salud)], ['Aporte pensión', fv(P.pension)], ['Pago ARL', fv(P.arl)], ['Pro-UCEVA', fv(P.proUCEVA)],
+        ['N.º planilla PILA (mes anterior)', fv(P.pilaNro)], ['Ingreso base de cotización', fv(P.ibc)], ['Aporte salud', fv(P.salud)], ['Aporte pensión', fv(P.pension)], ['Pago ARL', fv(P.arl)],
       ]) : h('div', { class: 'note bad' }, 'El paquete no tiene planilla SI.'))),
       h('div', { class: 'card' }, h('div', { class: 'card-h' }, h('h3', null, 'Planilla PILA')), h('div', { class: 'card-b' }, L ? kv([
         ['Cédula del aportante', fv(L.cedula)], ['N.º de planilla', fv(L.numero)], ['Periodo de cotización', fv(L.periodoSalud)], ['Fecha de pago', fv(L.fechaPago)], ['Empresa que recauda', fv(L.operador)],
@@ -4234,7 +4233,7 @@ fieldset legend { font-weight: 700; font-size: .88rem; padding: 0 6px; }
     const P = { pg: 0, adv: [], firmas: {}, ss: { cols: [], filas: {}, colAnterior: 1 } };
     P.nombre = F('texto', o.nombre); P.cedula = F('cedula', o.cedula); P.fechaElab = F('fecha', o.elab); P.compromiso = F('nro', '9999');
     P.honorarios = F('monto', o.hon); P.comisiones = F('monto', o.com); P.totalIngresos = F('monto', o.hon + o.com);
-    P.pilaNro = F('nro', o.pilaSI); P.ibc = F('monto', o.ibc); P.salud = F('monto', o.salud); P.pension = F('monto', o.pension); P.arl = F('monto', o.arl); P.fsp = F('monto', 0); P.proUCEVA = F('monto', 0);
+    P.pilaNro = F('nro', o.pilaSI); P.ibc = F('monto', o.ibc); P.salud = F('monto', o.salud); P.pension = F('monto', o.pension); P.arl = F('monto', o.arl); P.fsp = F('monto', 0);
     P.firmaNombreContratista = F('texto', o.nombre);
     const L = { pgs: [0], adv: [], fam: 'soi1', formato: 'Planilla integrada de autoliquidación (SOI / Compensar)' };
     L.cedula = F('cedula', o.cedula); L.nombre = F('texto', o.nombre); L.numero = F('nro', o.pilaDoc); L.fechaPago = F('fecha', o.fechaPago);
