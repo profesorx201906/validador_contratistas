@@ -1480,10 +1480,14 @@ fieldset legend { font-weight: 700; font-size: .88rem; padding: 0 6px; }
     consolidada: 'Autoliquidación consolidada (PagoSimple / SuAporte)',
     individual: 'PagoSimple — Reporte individual',
     resumen: 'Resumen general de pago',
+    aportes_resumen: 'Aportes en Línea — Planilla Resumen',
+    simple_pagada: 'Simple — Información de la Planilla Pagada',
     desconocida: 'Formato de PILA no reconocido',
   };
   /* t: texto normalizado (sin tildes, minúsculas, espacios colapsados) de la página. Devuelve null si no es una PILA. */
   function classify(t) {
+    if (typeof t !== 'string' || !t.trim()) return null;
+    t = norm(t);
     let m;
     if (/planilla integrada de autoliquidacion de aportes/.test(t)) {
       m = t.match(/pag\s*(\d+)\s*de\s*(\d+)/);
@@ -1497,6 +1501,15 @@ fieldset legend { font-weight: 700; font-size: .88rem; padding: 0 6px; }
       m = t.match(/pagina\s*(\d+)\s*de\s*(\d+)/);
       return { fam: 'resumen', n: m ? +m[1] : null, de: m ? +m[2] : null };
     }
+    /* Aportes en Línea: no confundir con el Resumen general anterior. */
+    if (/planilla resumen/.test(t) && /datos generales del aportante/.test(t) &&
+        /datos generales de la liquidacion/.test(t))
+      return { fam: 'aportes_resumen', n: 1, de: 1 };
+    /* Comprobante Simple: datos de pago y tabla por administradora. */
+    if (/informacion de la planilla pagada/.test(t) &&
+        /referencia de pago\s*\/?\s*numero planilla/.test(t) &&
+        /periodo de cotizacion para salud/.test(t))
+      return { fam: 'simple_pagada', n: 1, de: 1 };
     /* Algo que parece una PILA pero no tiene un formato conocido */
     if (/(planilla integrada|autoliquidacion (de )?aportes|planilla pila|soporte de pago de aportes)/.test(t) && /(aportante|cotizante)/.test(t)) return { fam: 'desconocida', n: 1, de: 1 };
     return null;
@@ -1894,8 +1907,88 @@ fieldset legend { font-weight: 700; font-size: .88rem; padding: 0 6px; }
     return L;
   }
 
+  /* Aportes en Línea — planilla resumen, variante con tabla de liquidación.
+     Aprovecha el lector de resumen y verifica las celdas clave de la cabecera. */
+  function leerAportesResumen(S, pages, cfg) {
+    const L = leerResumen(S, pages, cfg);
+    L.fam = 'aportes_resumen';
+    L.formato = FAMILIAS.aportes_resumen;
+    const findValue = (re) => {
+      const h = S.find((x) => re.test(x.n));
+      if (!h) return null;
+      const inline = h.n.replace(re, '').replace(/^\s*[:\-]\s*/, '').trim();
+      if (inline) return { t: inline, s: h };
+      const right = S.filter((x) => x !== h && x.pg === h.pg && Math.abs(x.y - h.y) <= 5 && x.x0 >= h.x1 - 3).sort((a,b)=>a.x0-b.x0)[0];
+      return right ? { t: right.t, s: right } : null;
+    };
+    if (X.fVal(L.numero) == null) {
+      const v = findValue(/^planilla\s*:?/);
+      if (v && /^\d{6,}$/.test(v.t.trim())) L.numero = mkF('nro', v.t.trim(), v.s);
+    }
+    if (X.fVal(L.cedula) == null) {
+      const id = S.find((x) => /^(cc|ce|nit)\s*\d{5,}/.test(x.n));
+      if (id) L.cedula = fCedSeg(id);
+    }
+    L.operador = mkF('texto', 'Aportes en Línea', S.find((x) => /aportes en linea/.test(x.n)) || null);
+    return L;
+  }
+
+  /* Simple — comprobante «Información de la Planilla Pagada».
+     Lee campos en línea o en la celda contigua y suma pagos sin mora por subsistema.
+     Si falta información se conserva como null, nunca se supone un monto. */
+  function leerSimplePagada(S, pages, cfg) {
+    const L = vacio('simple_pagada', pages);
+    const campo = (re) => {
+      const h = S.find((x) => re.test(x.n));
+      if (!h) return null;
+      const m = h.n.match(re);
+      const tail = m ? h.t.slice(m[0].length).replace(/^\s*[:\-]\s*/, '').trim() : '';
+      if (tail) return {t:tail,s:h};
+      const r = S.filter((x) => x !== h && x.pg === h.pg && Math.abs(x.y-h.y)<=5 && x.x0>=h.x1-3)
+        .sort((a,b)=>a.x0-b.x0)[0];
+      return r ? {t:r.t,s:r} : null;
+    };
+    const dato = (re,tipo,conv) => {
+      const v=campo(re);
+      return mkF(tipo,v ? conv(v.t) : null,v && v.s,v && v.t);
+    };
+    L.numero = dato(/^referencia de pago\s*\/?\s*numero planilla\s*:?/,'nro',t=>(t.match(/\d{6,}/)||[null])[0]);
+    L.cedula = dato(/^cedula ciudadana\s*:?/,'cedula',t=>(t.match(/\d{5,}/)||[null])[0]);
+    L.nombre = dato(/^empresa\s*:?/,'texto',t=>t);
+    L.periodoSalud = dato(/^periodo de cotizacion para salud\s*:?/,'fecha',periodo);
+    L.periodoPension = dato(/^periodo de cotizacion otros riesgos\s*:?/,'fecha',periodo);
+    L.fechaPago = dato(/^fecha\s*:?/,'fecha',U.parseFecha);
+    L.tipoPlanilla = dato(/^tipo de planilla\s*:?/,'texto',t=>t);
+    L.totalPagar = dato(/^total a pagar\s*:?/,'monto',parseMonto);
+    L.operador = mkF('texto','Simple',S.find(x=>/simple s\.?a\.?/.test(x.n))||null);
+    /* Las cifras están bajo «Valor sin Mora» a la derecha de cada administradora. */
+    const filas = [
+      {tipo:'pension',re:/colpensiones|proteccion|porvenir|colfondos|skandia/},
+      {tipo:'salud',re:/eps sura|nueva eps|sanitas|compensar eps|salud total|famisanar|coosalud/},
+      {tipo:'arl',re:/positiva compania|arl sura|seguros bolivar|colmena seguros|axa colpatria/}
+    ];
+    const values={pension:[],salud:[],arl:[]};
+    for(const seg of S){
+      const f=filas.find(x=>x.re.test(seg.n));
+      if(!f) continue;
+      const right=S.filter(x=>x!==seg && x.pg===seg.pg && Math.abs(x.y-seg.y)<=5 && x.x0>=seg.x1-3 && parseMonto(x.t)!=null)
+        .sort((a,b)=>a.x0-b.x0);
+      if(right.length) values[f.tipo].push(right[0]);
+    }
+    for(const tipo of ['pension','salud','arl']){
+      if(values[tipo].length){
+        const v=values[tipo].reduce((acc,x)=>acc+parseMonto(x.t),0);
+        L[tipo]=mkF('monto',v,values[tipo][0]);
+        L['pagado'+tipo[0].toUpperCase()+tipo.slice(1)]=L[tipo];
+      }
+    }
+    if(['pension','salud','arl'].some(x=>X.fVal(L[x])==null))
+      L.adv.push('Formato Simple: confirme los aportes por administradora en el PDF; no todos se pudieron identificar.');
+    return L;
+  }
+
   /* ============================================================================================ */
-  const LECTORES = { soi1: leerSoi1, soporte: leerSoporte, cotizante: leerCotizante, consolidada: leerConsolidada, individual: leerIndividual, resumen: leerResumen };
+  const LECTORES = { soi1: leerSoi1, soporte: leerSoporte, cotizante: leerCotizante, consolidada: leerConsolidada, individual: leerIndividual, resumen: leerResumen, aportes_resumen: leerAportesResumen, simple_pagada: leerSimplePagada };
 
   function extract(pages, segsByPage, cfg, fam) {
     const S = [].concat(...pages.map((p) => segsByPage[p.index]));
